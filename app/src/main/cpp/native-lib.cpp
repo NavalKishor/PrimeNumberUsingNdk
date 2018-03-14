@@ -2,8 +2,7 @@
 #include <string>
 #include "PrimeNumber.h"
 
-
-extern "C"
+extern "C" {
 JNIEXPORT jstring JNICALL Java_primeno_naval_com_primenumberusingndk_MainActivity_stringFromJNI(
         JNIEnv *env,
         jobject /* this */) {
@@ -11,11 +10,11 @@ JNIEXPORT jstring JNICALL Java_primeno_naval_com_primenumberusingndk_MainActivit
     return env->NewStringUTF(hello.c_str());
 }
 
-extern "C"
-JNIEXPORT jboolean JNICALL Java_primeno_naval_com_primenumberusingndk_MainActivity_isPrime(JNIEnv *env,jobject ,jint no)
-{
+//extern "C"
+JNIEXPORT jboolean JNICALL Java_primeno_naval_com_primenumberusingndk_MainActivity_isPrime(JNIEnv *env, jobject, jint no) {
     PrimeNumber primeNumber(no);
     return primeNumber.isPrime();
+}
 }
 
 

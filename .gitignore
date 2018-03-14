@@ -15,3 +15,5 @@ gradle/
 .idea/modules.xml
 .idea/runConfigurations.xml
 .idea/vcs.xml
+app/libs/
+libs/

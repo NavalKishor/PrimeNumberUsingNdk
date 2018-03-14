@@ -3,7 +3,7 @@
 /local.properties
 /.idea/workspace.xml
 /.idea/libraries
-.DS_Store
+
 /build
 /captures
 .externalNativeBuild
@@ -15,5 +15,4 @@ gradle/
 .idea/modules.xml
 .idea/runConfigurations.xml
 .idea/vcs.xml
-app/libs/
-libs/
+

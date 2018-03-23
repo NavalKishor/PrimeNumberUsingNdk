@@ -1,3 +1,13 @@
 <resources>
     <string name="app_name">PrimeNumberUsingNDK</string>
+    <string name="title_activity_home">HomeActivity</string>
+    <string name="action_load_image">Load Image</string>
+    <string name="action_switch_camera">Switch Camera</string>
+    <string name="action_gaussian_blur">Gaussian Blur</string>
+    <string name="action_default">Default View</string>
+    <string name="action_mean_blur">Mean Blur</string>
+    <string name="action_median_blur">Median Blur</string>
+    <string name="title_activity_main">MainActivity</string>
+
+    <string name="action_settings">Settings</string>
 </resources>

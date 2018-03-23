@@ -2,6 +2,29 @@
 <manifest xmlns:android="http://schemas.android.com/apk/res/android"
           package="primeno.naval.com.primenumberusingndk">
 
+    <!-- 1 Allow permission to use camera -->
+    <uses-permission android:name="android.permission.CAMERA"/>
+    <!-- 2 Allow camera to optimize to the dimensions of the device in use -->
+    <supports-screens
+        android:anyDensity="true"
+        android:largeScreens="true"
+        android:normalScreens="true"
+        android:resizeable="true"
+        android:smallScreens="true"/>
+    <!-- 3 Use Front camera and autofocus of camera -->
+    <uses-feature
+        android:name="android.hardware.camera"
+        android:required="false"/>
+    <uses-feature
+        android:name="android.hardware.camera.autofocus"
+        android:required="false"/>
+    <uses-feature
+        android:name="android.hardware.camera.front"
+        android:required="false"/>
+    <uses-feature
+        android:name="android.hardware.camera.front.autofocus"
+        android:required="false"/>
+
     <application
         android:allowBackup="true"
         android:icon="@mipmap/ic_launcher"
@@ -17,6 +40,13 @@
             </intent-filter>
         </activity>
         <activity android:name=".CtrlBrightnessActivity">
+        </activity>
+        <!-- 4 Create An activity for the Camera -->
+        <activity
+            android:name=".MyActivityShowCamera"
+            android:label="@string/app_name"
+            android:screenOrientation="portrait"
+            android:theme="@style/AppTheme.NoActionBar">
         </activity>
     </application>
 

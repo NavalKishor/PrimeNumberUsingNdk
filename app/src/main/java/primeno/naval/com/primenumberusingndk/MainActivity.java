@@ -40,6 +40,8 @@ public class MainActivity extends AppCompatActivity
     EditText number;
     @BindView(R.id.primenumber)
     Button primenumber;
+    @BindView(R.id.opencvCamera)
+    Button opencvCamera;
 
     @Override
     protected void onCreate(Bundle savedInstanceState)
@@ -55,6 +57,13 @@ public class MainActivity extends AppCompatActivity
             public void onClick(View view)
             {
                 startActivity(new Intent(MainActivity.this,CtrlBrightnessActivity.class));
+            }
+        });
+        opencvCamera.setOnClickListener(new View.OnClickListener() {
+            @Override
+            public void onClick(View view)
+            {
+                startActivity(new Intent(MainActivity.this,MyActivityShowCamera.class));
             }
         });
         primenumber.setOnClickListener(new View.OnClickListener() {

@@ -38,6 +38,8 @@ public class HomeActivity extends AppCompatActivity
     Button  bThreshold;
     @BindView(R.id.bAdaptiveThreshold)
     Button  bAdaptiveThreshold;
+    @BindView(R.id.brotation)
+    Button  brotation;
     @Override
     protected void onCreate(Bundle savedInstanceState)
     {
@@ -52,6 +54,7 @@ public class HomeActivity extends AppCompatActivity
         bErode.setOnClickListener(onClickListener);
         bThreshold.setOnClickListener(onClickListener);
         bAdaptiveThreshold.setOnClickListener(onClickListener);
+        brotation.setOnClickListener(onClickListener);
     }
 
 
@@ -84,6 +87,13 @@ public class HomeActivity extends AppCompatActivity
                 case R.id.bAdaptiveThreshold :
                     mode=ADAPTIVE_THRESHOLD;
                 break;
+                case R.id.brotation :
+                   // mode=ADAPTIVE_THRESHOLD;
+                Intent i = new Intent(getApplicationContext(), FeaturesActivity.class);
+                i.putExtra("ACTION_MODE", mode);
+                startActivity(i);
+                return;
+
 
         }
         Intent i = new Intent(getApplicationContext(), ImagesActivity.class);

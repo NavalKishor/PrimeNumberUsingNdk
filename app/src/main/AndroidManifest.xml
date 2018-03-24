@@ -5,6 +5,8 @@
     <!-- 1 Allow permission to use camera -->
     <uses-permission android:name="android.permission.CAMERA"/>
     <!-- 2 Allow camera to optimize to the dimensions of the device in use -->
+    <uses-permission
+        android:name="android.permission.READ_EXTERNAL_STORAGE"/>
     <supports-screens
         android:anyDensity="true"
         android:largeScreens="true"
@@ -59,6 +61,9 @@
             </intent-filter>
         </activity>
         <activity android:name="opencv.naval.show.ImagesActivity">
+        </activity>
+        <activity android:name="opencv.naval.show.FeaturesActivity"
+                  android:label="@string/title_activity_feature">
         </activity>
     </application>
 

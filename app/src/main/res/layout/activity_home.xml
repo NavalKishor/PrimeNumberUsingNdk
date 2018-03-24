@@ -61,6 +61,11 @@
         android:layout_height="wrap_content"
         android:layout_width="wrap_content"
         android:text="Adaptive Threshold" />
+    <Button
+        android:id="@+id/brotation"
+        android:layout_height="wrap_content"
+        android:layout_width="wrap_content"
+        android:text="Rotation" />
 
 </LinearLayout >
 </ScrollView>

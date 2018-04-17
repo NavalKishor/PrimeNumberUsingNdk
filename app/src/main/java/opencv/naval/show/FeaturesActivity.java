@@ -1,6 +1,7 @@
 package opencv.naval.show;
 
 import android.Manifest;
+import android.content.Context;
 import android.content.Intent;
 import android.content.pm.PackageManager;
 import android.database.Cursor;
@@ -16,9 +17,13 @@ import android.support.v4.app.ActivityCompat;
 import android.support.v4.content.ContextCompat;
 import android.support.v7.app.AppCompatActivity;
 import android.util.Log;
+import android.view.Display;
 import android.view.Menu;
 import android.view.MenuItem;
+import android.view.MotionEvent;
+import android.view.View;
 import android.widget.ImageView;
+import android.widget.Toast;
 
 import org.opencv.android.BaseLoaderCallback;
 import org.opencv.android.LoaderCallbackInterface;
@@ -28,14 +33,19 @@ import org.opencv.core.Core;
 import org.opencv.core.CvType;
 import org.opencv.core.Mat;
 import org.opencv.core.MatOfPoint;
+import org.opencv.core.MatOfPoint2f;
 import org.opencv.core.Point;
+import org.opencv.core.RotatedRect;
 import org.opencv.core.Scalar;
 import org.opencv.core.Size;
+import org.opencv.imgcodecs.Imgcodecs;
 import org.opencv.imgproc.Imgproc;
+import org.opencv.utils.Converters;
 
 import java.io.IOException;
 import java.io.InputStream;
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.List;
 import java.util.Random;
 
@@ -84,6 +94,7 @@ public class FeaturesActivity extends AppCompatActivity
         }
     };
     private String picturePath;
+    ArrayList<org.opencv.core.Point> corners=new ArrayList<org.opencv.core.Point>();
 
     @Override
     protected void onCreate(Bundle savedInstanceState)
@@ -105,6 +116,20 @@ public class FeaturesActivity extends AppCompatActivity
             Log.i("permission", "READ_EXTERNAL_STORAGE already granted");
             read_external_storage_granted = true;
         }
+        ivImage.setOnTouchListener(new View.OnTouchListener() {
+            @Override
+            public boolean onTouch(View view, MotionEvent event) {
+                if(sampledImage==null) return false;
+                Log.i(TAG, "event.getX(), event.getY(): " + event.getX() +" "+ event.getY());
+                int projectedX = (int)((double)event.getX() * ((double)sampledImage.width()/(double)view.getWidth()));
+                int projectedY = (int)((double)event.getY() * ((double)sampledImage.height()/(double)view.getHeight()));
+                org.opencv.core.Point corner = new org.opencv.core.Point(projectedX, projectedY);
+                corners.add(corner);
+                Imgproc.circle(sampledImage, corner, (int) 5, new Scalar(0,0,255),2);
+                displayImage(sampledImage);
+                return false;
+            }
+        });
     }
     @Override
     protected void onResume()
@@ -166,12 +191,448 @@ public class FeaturesActivity extends AppCompatActivity
         } else if (id == R.id.Contours) {
             //Apply contours
             Contours();
-        }else if (id == R.id    .reset) {
+        }else if (id == R.id.reset) {
             //Apply to rest the image to original image
             createOriginalBitmap(picturePath);
         }
+        else if(id==R.id.action_rigidscan)
+        {
+            //1. The first step is to make sure that the user has already loaded an image:
+            if(originalMat==null)
+            {
+                Context context = getApplicationContext();
+                CharSequence text = "You need to load an image first!";
+                int duration = Toast.LENGTH_SHORT;
+                Toast toast = Toast.makeText(context, text, duration);
+                toast.show();
+                loadImage(picturePath);
+                return true;
+            }
+            //2. Convert the input image to a grayscale image:
+            Mat gray = new Mat();
+            Imgproc.cvtColor(originalMat, gray, Imgproc.COLOR_RGB2GRAY);
+            //3. Use the Canny edge detector to build the edge image:
+            Mat edgeImage=new Mat();
+            Imgproc.Canny(gray, edgeImage, 100, 200);
+          //  4. After building the edge image, we need to detect lines, by using the probabilistic Hough line transform:
+            Mat lines = new Mat();
+            int threshold = 50;
+            Imgproc.HoughLinesP(edgeImage, lines, 1, Math.PI/180, threshold,60,10);
+            //5. Declare and initialize the variables to find up to four bounding
+            boolean [] include=new boolean[lines.cols()];
+            double maxTop=edgeImage.rows();
+            double maxBottom=0;
+            double maxRight=0;
+            double maxLeft=edgeImage.cols();
+            int leftLine=0;
+            int rightLine=0;
+            int topLine=0;
+            int bottomLine=0;
+            ArrayList<org.opencv.core.Point> points=new ArrayList<org.opencv.core.Point>();
+            // 6. In the for loop, we test every line to find the left-most border line of the
+            //object of interest. Once it is found, we set its corresponding include array element to
+            //true to avoid selecting the same line again when we search for a different bounding
+            //line:
+            for (int i = 0; i < lines.cols(); i++)
+            {
+                double[] line = lines.get(0, i);
+                double xStart = line[0], xEnd = line[2];
+                if(xStart<maxLeft && !include[i])
+                {
+                    maxLeft=xStart;
+                    leftLine=i;
+                }
+                if(xEnd<maxLeft && !include[i])
+                {
+                    maxLeft=xEnd;
+                    leftLine=i;
+                }
+            }
+            include[leftLine]=true;
+//            7. Once the line is found, we add its two points to the points array list. This array list
+//            will be used later when we estimate the bounding rectangle:
+            double[] line = lines.get(0, leftLine);
+            double xStartleftLine = line[0],
+                    yStartleftLine = line[1],
+                    xEndleftLine = line[2],
+                    yEndleftLine = line[3];
+            org.opencv.core.Point lineStartleftLine = new
+                    org.opencv.core.Point(xStartleftLine, yStartleftLine);
+            org.opencv.core.Point lineEndleftLine = new
+                    org.opencv.core.Point(xEndleftLine, yEndleftLine);
+            points.add(lineStartleftLine);
+            points.add(lineEndleftLine);
+           // 8. We do the same to find the right-most bounding line:
+            for (int i = 0; i < lines.cols(); i++)
+            {
+                line = lines.get(0, i);
+                double xStart = line[0], xEnd = line[2];
+                if(xStart>maxRight && !include[i])
+                {
+                    maxRight=xStart;
+                    rightLine=i;
+                }if(xEnd>maxRight && !include[i])
+                {
+                    maxRight=xEnd;
+                    rightLine=i;
+                }
+            }include[rightLine]=true;
+            //9. Add the points that belong to the right-most border line to the points array list:
+            line = lines.get(0, rightLine);
+            double xStartRightLine = line[0],
+            yStartRightLine = line[1],
+            xEndRightLine = line[2],
+            yEndRightLine = line[3];
+            org.opencv.core.Point lineStartRightLine = new
+            org.opencv.core.Point(xStartRightLine, yStartRightLine);
+            org.opencv.core.Point lineEndRightLine = new
+            org.opencv.core.Point(xEndRightLine, yEndRightLine);
+            points.add(lineStartRightLine);
+            points.add(lineEndRightLine);
+//            10. Find the top border line:
+        for (int i = 0; i < lines.cols(); i++)
+        {
+            line = lines.get(0, i);
+            double yStart = line[1],yEnd = line[3];
+            if(yStart<maxTop && !include[i])
+            {
+                maxTop=yStart;
+                topLine=i;
+            }if(yEnd<maxTop && !include[i])
+            {
+                maxTop=yEnd;
+                topLine=i;
+            }
+        }include[topLine]=true;
+//            11. Add the points that belong to the top border line to the points array list:
+        line = lines.get(0, topLine);
+            double xStartTopLine = line[0],
+                    yStartTopLine = line[1],
+                    xEndTopLine = line[2],
+                    yEndTopLine = line[3];
+            org.opencv.core.Point lineStartTopLine = new
+                    org.opencv.core.Point(xStartTopLine, yStartTopLine);
+            org.opencv.core.Point lineEndTopLine = new org.opencv.core.Point(xEndTopLine, yEndTopLine);
+            points.add(lineStartTopLine);
+            points.add(lineEndTopLine);
+//            12. Find the bottom border line:
+        for (int i = 0; i < lines.cols(); i++)
+        {
+            line = lines.get(0, i);
+            double yStart = line[1],yEnd = line[3];
+            if(yStart>maxBottom && !include[i])
+            {
+                maxBottom=yStart;
+                bottomLine=i;
+            }if(yEnd>maxBottom && !include[i])
+            {
+                maxBottom=yEnd;
+                bottomLine=i;
+            }
+        }include[bottomLine]=true;
+//            13. Add the bottom line points to the points array list:
+            line = lines.get(0, bottomLine);
+            double xStartBottomLine = line[0],
+                    yStartBottomLine = line[1],
+                    xEndBottomLine = line[2],
+                    yEndBottomLine = line[3];
+            org.opencv.core.Point lineStartBottomLine = new
+                    org.opencv.core.Point(xStartBottomLine, yStartBottomLine);
+            org.opencv.core.Point lineEndBottomLine = new
+                    org.opencv.core.Point(xEndBottomLine, yEndBottomLine);
+            points.add(lineStartBottomLine);
+            points.add(lineEndBottomLine);
+//            14. We initialize a matrix of points, MatOfPoint2f object, with the list of points that we
+//            selected from the detected border lines:
+            MatOfPoint2f mat=new MatOfPoint2f();
+            mat.fromList(points);
+//            15. We find the bounding rectangle ,now to find a rectangle
+//that fits a set of points and has the minimum area of all the possible rectangles
+            RotatedRect rect= Imgproc.minAreaRect(mat);
+//            16. Now, we extract the four corner points of the estimated rectangle to an array of
+//            points:
+            org.opencv.core.Point rect_points[]=new org.opencv.core.Point [4];
+            rect.points(rect_points);
+//            17. Initialize a new image that will be used to display the object of interest after doing
+//the perspective correction.We will also use this image’s four corners to find the
+//transformation that will minimize the distance between these corners and the
+//corresponding object of interest’s corners.
+            Mat correctedImage=new Mat(originalMat.rows(),originalMat.cols(),originalMat.type());
+//            18. Now, we initialize two Mat objects, one to store the four corners of the object of
+//            interest and the other one to store the corresponding corners of the image in which we
+//            will display the object of interest after the perspective correction:
+            Mat srcPoints= Converters.vector_Point2f_to_Mat(Arrays.asList(rect_points));
+            Mat destPoints=Converters.vector_Point2f_to_Mat(Arrays.asList(new org.opencv.core.Point[]{
+                    new org.opencv.core.Point(0, correctedImage.rows()),
+                    new org.opencv.core.Point(0, 0),
+                    new org.opencv.core.Point(correctedImage.cols(),0),
+                    new org.opencv.core.Point(correctedImage.cols(), correctedImage.rows())
+            }));
+//            19. We calculate the needed transformation matrix by calling
+//            Imgproc.getPerspectiveTransform() and passing it to the source and destination
+//            corner points:
+            Mat transformation=Imgproc.getPerspectiveTransform(srcPoints,
+                    destPoints);
+//            20. below Finally, we apply the transformation that we calculated
+            Imgproc.warpPerspective(originalMat, correctedImage, transformation, correctedImage.size());
+//            21. The last step is to display our object of interest after applying the appropriate
+//transformation:
+            displayImage(correctedImage);
+
+        }
+        else if(id==R.id.action_flexscan)
+        {
+            if (sampledImage == null)
+            {
+                Context context = getApplicationContext();
+                CharSequence text = "You need to load an image first!";
+                int duration = Toast.LENGTH_SHORT;
+                Toast toast = Toast.makeText(context, text, duration);
+                toast.show();
+                loadImage(picturePath);
+                return true;
+            }
+            Mat gray = new Mat();
+            Imgproc.cvtColor(sampledImage, gray, Imgproc.COLOR_RGB2GRAY);
+            Imgproc.GaussianBlur(gray, gray, new Size(7,7), 0);
+            Mat edgeImage=new Mat();
+            Imgproc.Canny(gray, edgeImage, 100, 300);
+            Mat lines = new Mat();
+            int threshold = 100;
+            Imgproc.HoughLinesP(edgeImage, lines, 1, Math.PI/180, threshold,60,10);
+            ArrayList<org.opencv.core.Point> corners=new ArrayList<org.opencv.core.Point>();
+//            for (int i = 0; i < lines.cols(); i++)
+            for (int i = 0; i < lines.rows(); i++)
+            {
+//                for (int j = i+1; j < lines.cols(); j++)
+                for (int j = i+1; j < lines.rows(); j++)
+                {
+//                    org.opencv.core.Point intersectionPoint = getLinesIntersection(lines.get(0, i), lines.get(0, j));
+                    org.opencv.core.Point intersectionPoint = getLinesIntersection(lines.get(i, 0), lines.get(j, 0));
+                    if(intersectionPoint!=null)
+                    {
+                        corners.add(intersectionPoint);
+                    }
+                }
+            }
+            MatOfPoint2f cornersMat=new MatOfPoint2f();
+            cornersMat.fromList(corners);
+            MatOfPoint2f approxConrers=new MatOfPoint2f();
+            try
+            {
+                Imgproc.approxPolyDP(cornersMat, approxConrers,Imgproc.arcLength(cornersMat, true)*0.02, true);
+            }
+            catch (Exception e)
+            {
+                e.printStackTrace();
+            }
+            if(approxConrers.rows()<4)
+            {
+                Context context = getApplicationContext();
+                CharSequence text = "Couldn't detect an object with four corners!";
+                int duration = Toast.LENGTH_LONG;
+                Toast toast = Toast.makeText(context, text, duration);
+                toast.show();
+
+                return true;
+            }
+            corners.clear();
+            Converters.Mat_to_vector_Point2f(approxConrers,corners);
+            org.opencv.core.Point centroid=new org.opencv.core.Point(0,0);
+            for(org.opencv.core.Point point:corners)
+            {
+                centroid.x+=point.x;
+                centroid.y+=point.y;
+            }
+            centroid.x/=corners.size();
+            centroid.y/=corners.size();
+            ArrayList<org.opencv.core.Point> top=new
+                    ArrayList<org.opencv.core.Point>();
+            ArrayList<org.opencv.core.Point> bottom=new
+                    ArrayList<org.opencv.core.Point>();
+            for (int i = 0; i < corners.size(); i++)
+            {
+//                if (corners.get(i).y < center.y)
+                if (corners.get(i).y < centroid.y)
+                    top.add(corners.get(i));
+                else
+                    bottom.add(corners.get(i));
+            }
+            org.opencv.core.Point topLeft = top.get(0).x > top.get(1).x ?
+                    top.get(1) : top.get(0);
+            org.opencv.core.Point topRight = top.get(0).x > top.get(1).x ?
+                    top.get(0) : top.get(1);
+            org.opencv.core.Point bottomLeft = bottom.get(0).x > bottom.get(1).x ?
+                    bottom.get(1) :bottom.get(0);
+            org.opencv.core.Point bottomRight = bottom.get(0).x > bottom.get(1).x ?
+                    bottom.get(0) : bottom.get(1);
+            corners.clear();
+            corners.add(topLeft);
+            corners.add(topRight);
+            corners.add(bottomRight);
+            corners.add(bottomLeft);
+            Mat correctedImage=new
+                    Mat(sampledImage.rows(),sampledImage.cols(),sampledImage.type());
+            Mat srcPoints=Converters.vector_Point2f_to_Mat(corners);
+            Mat destPoints=Converters.vector_Point2f_to_Mat(Arrays.asList(new
+                    org.opencv.core.Point[]{
+                    new org.opencv.core.Point(0, 0),
+                    new org.opencv.core.Point(correctedImage.cols(), 0),
+                    new
+                            org.opencv.core.Point(correctedImage.cols(),correctedImage.rows()),new
+                    org.opencv.core.Point(0,correctedImage.rows())}));
+            Mat transformation=Imgproc.getPerspectiveTransform(srcPoints,
+                    destPoints);
+            Imgproc.warpPerspective(sampledImage, correctedImage, transformation,
+                    correctedImage.size());
+            displayImage(correctedImage);
+        }
+        else if(id==R.id.action_manScan)
+        {
+            if(sampledImage==null)
+            {
+                Context context = getApplicationContext();
+                CharSequence text = "You need to load an image first!";
+                int duration = Toast.LENGTH_SHORT;
+
+                Toast toast = Toast.makeText(context, text, duration);
+                toast.show();
+                loadImage(picturePath);
+                return true;
+            }
+            if(corners.size()!=4)
+            {
+                Context context = getApplicationContext();
+                CharSequence text = "You need to select four corners!";
+                int duration = Toast.LENGTH_LONG;
+
+                Toast toast = Toast.makeText(context, text, duration);
+                toast.show();
+                corners.clear();
+                return true;
+            }
+            //find the centroid of the polygon to order the found corners
+            org.opencv.core.Point centroid=new org.opencv.core.Point(0,0);
+            for(org.opencv.core.Point point:corners)
+            {
+                centroid.x+=point.x;
+                centroid.y+=point.y;
+            }
+            centroid.x/=corners.size();
+            centroid.y/=corners.size();
+
+            sortCorners(corners,centroid);
+            Mat correctedImage=new Mat(sampledImage.rows(),sampledImage.cols(),sampledImage.type());
+            Mat srcPoints=Converters.vector_Point2f_to_Mat(corners);
+
+            Mat destPoints=Converters.vector_Point2f_to_Mat(Arrays.asList(new org.opencv.core.Point[]{
+                    new org.opencv.core.Point(0, 0),
+                    new org.opencv.core.Point(correctedImage.cols(), 0),
+                    new org.opencv.core.Point(correctedImage.cols(),correctedImage.rows()),
+                    new org.opencv.core.Point(0,correctedImage.rows())}));
+
+            Mat transformation=Imgproc.getPerspectiveTransform(srcPoints, destPoints);
+            Imgproc.warpPerspective(sampledImage, correctedImage, transformation, correctedImage.size());
+
+            displayImage(correctedImage);
+        }
+
 
         return super.onOptionsItemSelected(item);
+    }
+
+    private Point getLinesIntersections(double[] doubles, double[] doubles1)
+    {
+        //IPx=(((x1y2-y1x2)(x2-x4)-(x1-x2)(x2y4-y2x4))/((x1-x2)(y2-y4)-(y1-y2)(x2-x4)))
+        //IPy=(((x1y2-y1x2)(y8-y4)-(y1-y2)(x8y4-y8x4))/((x1-x2)(y8-y4)-(y1-y2)(x8-x4)))
+
+
+        return null;
+    }
+    private org.opencv.core.Point getLinesIntersection(double [] firstLine, double [] secondLine)
+    {
+        double FX1=firstLine[0],FY1=firstLine[1],FX2=firstLine[2],FY2=firstLine[3];
+        double SX1=secondLine[0],SY1=secondLine[1],SX2=secondLine[2],SY2=secondLine[3];
+        org.opencv.core.Point intersectionPoint=null;
+        //Make sure the we will not divide by zero
+        double denominator=(FX1-FX2)*(SY1-SY2)-(FY1-FY2)*(SX1-SX2);
+        if(denominator!=0)
+        {
+            intersectionPoint=new org.opencv.core.Point();
+            intersectionPoint.x=((FX1*FY2-FY1*FX2)*(SX1-SX2)-(FX1-FX2)*(SX1*SY2-SY1*SX2))/denominator;
+            intersectionPoint.y=((FX1*FY2-FY1*FX2)*(SY1-SY2)-(FY1-FY2)*(SX1*SY2-SY1*SX2))/denominator;
+            if(intersectionPoint.x<0 || intersectionPoint.y<0)
+                return null;
+        }
+        return intersectionPoint;
+    }
+    void sortCorners(ArrayList<org.opencv.core.Point> corners, org.opencv.core.Point center)
+    {
+        ArrayList<org.opencv.core.Point> top=new ArrayList<org.opencv.core.Point>();
+        ArrayList<org.opencv.core.Point> bottom=new ArrayList<org.opencv.core.Point>();
+
+        for (int i = 0; i < corners.size(); i++)
+        {
+            if (corners.get(i).y < center.y)
+                top.add(corners.get(i));
+            else
+                bottom.add(corners.get(i));
+        }
+
+        double topLeft=top.get(0).x;
+        int topLeftIndex=0;
+        for(int i=1;i<top.size();i++)
+        {
+            if(top.get(i).x<topLeft)
+            {
+                topLeft=top.get(i).x;
+                topLeftIndex=i;
+            }
+        }
+
+        double topRight=0;
+        int topRightIndex=0;
+        for(int i=0;i<top.size();i++)
+        {
+            if(top.get(i).x>topRight)
+            {
+                topRight=top.get(i).x;
+                topRightIndex=i;
+            }
+        }
+
+        double bottomLeft=bottom.get(0).x;
+        int bottomLeftIndex=0;
+        for(int i=1;i<bottom.size();i++)
+        {
+            if(bottom.get(i).x<bottomLeft)
+            {
+                bottomLeft=bottom.get(i).x;
+                bottomLeftIndex=i;
+            }
+        }
+
+        double bottomRight=bottom.get(0).x;
+        int bottomRightIndex=0;
+        for(int i=1;i<bottom.size();i++)
+        {
+            if(bottom.get(i).x>bottomRight)
+            {
+                bottomRight=bottom.get(i).x;
+                bottomRightIndex=i;
+            }
+        }
+
+        org.opencv.core.Point topLeftPoint = top.get(topLeftIndex);
+        org.opencv.core.Point topRightPoint = top.get(topRightIndex);
+        org.opencv.core.Point bottomLeftPoint = bottom.get(bottomLeftIndex);
+        org.opencv.core.Point bottomRightPoint = bottom.get(bottomRightIndex);
+
+        corners.clear();
+        corners.add(topLeftPoint);
+        corners.add(topRightPoint);
+        corners.add(bottomRightPoint);
+        corners.add(bottomLeftPoint);
     }
 
     @Override
@@ -268,6 +729,8 @@ public class FeaturesActivity extends AppCompatActivity
                         //ivImage.setImageBitmap(currentBitmap);
                         //ivImage.setImageBitmap(selectedImage);
                        // ivImageProcessed.setImageBitmap(processedImage);
+                        loadImage(picturePath);
+
                     }catch (Exception e){
                         e.printStackTrace();
                     }
@@ -275,7 +738,82 @@ public class FeaturesActivity extends AppCompatActivity
                 break;
         }
     }
+//    Now, we are ready to display the image using the image view component:
+    private void displayImage(Mat image)
+    {
+// create a bitMap
+        Bitmap bitMap = Bitmap.createBitmap(image.cols(),
+                image.rows(),Bitmap.Config.RGB_565);
+// convert to bitmap:
+        Utils.matToBitmap(image, bitMap);
+// find the imageview and draw it!
+//        ImageView iv = (ImageView) findViewById(R.id.IODarkRoomImageView);
+        ivImage.setImageBitmap(bitMap);
+    }
+    /////
+//    Once we have the path ready, we call the loadImage() method:
+    Mat sampledImage,originalImage;
+    private void loadImage(String path)
+    {
+//        originalImage = Highgui.imread(path);
+        originalImage = Imgcodecs.imread(path);
+        Mat rgbImage=new Mat();
+        Imgproc.cvtColor(originalImage, rgbImage, Imgproc.COLOR_BGR2RGB);
+        Display display = getWindowManager().getDefaultDisplay();
+//This is "android graphics Point" class
+        android.graphics.Point size = new android.graphics.Point();
+        display.getSize(size);
+        int width = size.x;
+        int height = size.y;
+        sampledImage=new Mat();
+        double downSampleRatio= calculateSubSampleSize(rgbImage,width,height);
+        Imgproc.resize(rgbImage, sampledImage, new Size(),downSampleRatio,downSampleRatio,Imgproc.INTER_AREA);
+        try {
+//            ExifInterface exif = new ExifInterface(selectedImagePath);
+            ExifInterface exif = new ExifInterface(picturePath);
+            int orientation = exif.getAttributeInt(ExifInterface.TAG_ORIENTATION,
+                    1);
+            switch (orientation)
+            {
+                case ExifInterface.ORIENTATION_ROTATE_90:
+//get the mirrored image
+                    sampledImage=sampledImage.t();
+//flip on the y-axis
+                    Core.flip(sampledImage, sampledImage, 1);
+                    break;
+                case ExifInterface.ORIENTATION_ROTATE_270:
+//get up side down image
+                    sampledImage=sampledImage.t();
+//Flip on the x-axis
+                    Core.flip(sampledImage, sampledImage, 0);
+                    break;
+            }
+        } catch (IOException e) {
+            e.printStackTrace();
+        }
+    }
+    ////
 
+    ///
+    private static double calculateSubSampleSize(Mat srcImage, int reqWidth,
+            int reqHeight) {
+// Raw height and width of image
+        final int height = srcImage.height();
+        final int width = srcImage.width();
+        double inSampleSize = 1;
+        if (height > reqHeight || width > reqWidth) {
+// Calculate ratios of requested height and width to the raw
+//height and width
+            final double heightRatio = (double) reqHeight / (double) height;
+            final double widthRatio = (double) reqWidth / (double) width;
+// Choose the smallest ratio as inSampleSize value, this will
+//guarantee final image with both dimensions larger than or
+//equal to the requested height and width.
+            inSampleSize = heightRatio<widthRatio ? heightRatio :widthRatio;
+        }
+        return inSampleSize;
+    }
+    ///
     public void createOriginalBitmap(String picturePath)
     {
         if(picturePath==null) return;
@@ -301,6 +839,7 @@ public class FeaturesActivity extends AppCompatActivity
         Utils.bitmapToMat(tempBitmap, originalMat);
         currentBitmap = originalBitmap.copy(Bitmap.Config.ARGB_8888,false);
         loadImageToImageView();
+        loadImage(picturePath);
     }
 
     private void loadImageToImageView()
@@ -361,8 +900,7 @@ public class FeaturesActivity extends AppCompatActivity
         Core.convertScaleAbs(grad_x, abs_grad_x);
         Core.convertScaleAbs(grad_y, abs_grad_y);
 //Calculating the resultant gradient
-        Core.addWeighted(abs_grad_x, 0.5,
-                abs_grad_y, 0.5, 1, sobel);
+        Core.addWeighted(abs_grad_x, 0.5, abs_grad_y, 0.5, 1, sobel);
 //Converting Mat back to Bitmap
         Utils.matToBitmap(sobel, currentBitmap);
         loadImageToImageView();

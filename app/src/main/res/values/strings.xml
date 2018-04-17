@@ -19,4 +19,8 @@
     <string name="HoughCircles">Hough Circles</string>
     <string name="Contours">Contours</string>
     <string name="resetimage">Reset Image</string>
+    <string name="title_activity_lens">DocumentScanningActivity</string>
+    <string name="action_rigidscan">Rigid Scan</string>
+    <string name="action_flexscan">Flex Scan</string>
+    <string name="action_manScan">Manual Scan</string>
 </resources>

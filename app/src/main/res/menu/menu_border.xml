@@ -5,7 +5,8 @@
           android:title="@string/action_load_image"
           android:orderInCategory="1"
           app:showAsAction="ifRoom" />
-    <item android:id="@+id/DoG" android:title="@string/DoG"
+    <item android:id="@+id/DoG"
+          android:title="@string/DoG"
           android:orderInCategory="100"
           app:showAsAction="never" />
     <item android:id="@+id/CannyEdges"
@@ -32,10 +33,30 @@
           android:title="@string/Contours"
           android:orderInCategory="100"
           app:showAsAction="never" />
+    <item
+        android:id="@+id/action_rigidscan"
+        android:enabled="true"
+        android:orderInCategory="100"
+        android:title="@string/action_rigidscan"
+        android:visible="true">
+    </item><item
+        android:id="@+id/action_flexscan"
+        android:enabled="true"
+        android:orderInCategory="100"
+        android:title="@string/action_flexscan"
+        android:visible="true">
+    </item><item
+        android:id="@+id/action_manScan"
+        android:enabled="true"
+        android:orderInCategory="100"
+        android:title="@string/action_manScan"
+        android:visible="true">
+    </item>
     <item android:id="@+id/reset"
           android:title="@string/resetimage"
           android:orderInCategory="100"
-          app:showAsAction="never"  android:visible="false"/>
+          app:showAsAction="never"  android:visible="true"/>
+
 
 
 

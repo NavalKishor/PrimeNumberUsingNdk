@@ -65,7 +65,12 @@
         android:id="@+id/brotation"
         android:layout_height="wrap_content"
         android:layout_width="wrap_content"
-        android:text="Rotation" />
+        android:text="Open Filer to find shapes" />
+    <Button
+        android:id="@+id/bShare"
+        android:layout_height="wrap_content"
+        android:layout_width="wrap_content"
+        android:text="Share this app" />
 
 </LinearLayout >
 </ScrollView>

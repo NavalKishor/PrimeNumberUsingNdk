@@ -6,8 +6,24 @@
     <!-- 1 Allow permission to use camera -->
     <uses-permission android:name="android.permission.CAMERA"/>
     <!-- 2 Allow camera to optimize to the dimensions of the device in use -->
+    <uses-permission android:name="android.permission.READ_EXTERNAL_STORAGE"/>
+    <!--Wifi peer to peer-->
+    <!--1 Request permission to use the Wi-Fi hardware on the device and also declare
+    your application to have the correct minimum SDK version in the Android manifest:-->
+    <uses-sdk android:minSdkVersion="14" />
+    <uses-permission android:name="android.permission.ACCESS_WIFI_STATE" />
+    <uses-permission android:name="android.permission.CHANGE_WIFI_STATE" />
+    <uses-permission android:name="android.permission.CHANGE_NETWORK_STATE" />
+    <uses-permission android:name="android.permission.INTERNET" />
+    <uses-permission android:name="android.permission.ACCESS_NETWORK_STATE" />
+    <uses-permission android:name="android.permission.READ_PHONE_STATE" />
     <uses-permission
-        android:name="android.permission.READ_EXTERNAL_STORAGE"/>
+        android:required="true"
+        android:name="android.permission.ACCESS_COARSE_LOCATION"/>
+
+    <!-- Google Play filtering -->
+    <uses-feature android:name="android.hardware.wifi.direct" android:required="true"/>
+    <!--Wifi peer to peer-->
     <supports-screens
         android:anyDensity="true"
         android:largeScreens="true"
@@ -63,28 +79,50 @@
         </activity>
         <activity android:name="opencv.naval.show.ImagesActivity">
         </activity>
-        <activity android:name="opencv.naval.show.FeaturesActivity"
-                  android:label="@string/title_activity_feature">
+        <activity
+            android:name="opencv.naval.show.FeaturesActivity"
+            android:label="@string/title_activity_feature">
+        </activity>
+        <activity
+            android:launchMode="singleTask"
+            android:icon="@drawable/ic_launcher_act"
+            android:name="wifipeertopeer.MyWifiActivity"
+            android:label="@string/title_activity_feature">
+            <intent-filter>
+                <action
+                    android:name="android.intent.action.MAIN" />
+                <category
+                    android:name="android.intent.category.LAUNCHER" />
+            </intent-filter>
         </activity>
         <activity
             android:name="opencv.naval.show.DocumentScanningActivity"
             android:label="@string/title_activity_lens"
-            android:theme="@style/AppTheme" >
+            android:theme="@style/AppTheme">
             <intent-filter>
-                <action android:name="android.intent.action.MAIN" />
-                <category android:name="android.intent.category.LAUNCHER" />
+                <action android:name="android.intent.action.MAIN"/>
+
+                <category android:name="android.intent.category.LAUNCHER"/>
             </intent-filter>
         </activity>
+        <!-- Used for transferring files  after a successful connection -->
+        <service android:enabled="true" android:name="wifipeertopeer.FileTransferService" />
 
         <provider
             android:name="android.support.v4.content.FileProvider"
-            android:authorities="primeno.naval.com.primenumberusingndk.fileProvider"
-            android:grantUriPermissions="true"
-            android:exported="false">
+            android:authorities="primeno.wifipeertopeer.com.primenumberusingndk.fileProvider"
+            android:exported="false"
+            android:grantUriPermissions="true">
             <meta-data
                 android:name="android.support.FILE_PROVIDER_PATHS"
-                android:resource="@xml/file_paths" />
+                android:resource="@xml/file_paths"/>
         </provider>
+
+        <receiver
+            android:name="wifipeertopeer.WiFiDirectBroadcastReceiver"
+            android:enabled="true"
+            android:exported="true">
+        </receiver>
     </application>
 
 </manifest>

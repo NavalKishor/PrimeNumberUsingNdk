@@ -446,10 +446,8 @@ public class FeaturesActivity extends AppCompatActivity
             }
             centroid.x/=corners.size();
             centroid.y/=corners.size();
-            ArrayList<org.opencv.core.Point> top=new
-                    ArrayList<org.opencv.core.Point>();
-            ArrayList<org.opencv.core.Point> bottom=new
-                    ArrayList<org.opencv.core.Point>();
+            ArrayList<org.opencv.core.Point> top=new ArrayList<org.opencv.core.Point>();
+            ArrayList<org.opencv.core.Point> bottom=new ArrayList<org.opencv.core.Point>();
             for (int i = 0; i < corners.size(); i++)
             {
 //                if (corners.get(i).y < center.y)
@@ -458,33 +456,24 @@ public class FeaturesActivity extends AppCompatActivity
                 else
                     bottom.add(corners.get(i));
             }
-            org.opencv.core.Point topLeft = top.get(0).x > top.get(1).x ?
-                    top.get(1) : top.get(0);
-            org.opencv.core.Point topRight = top.get(0).x > top.get(1).x ?
-                    top.get(0) : top.get(1);
-            org.opencv.core.Point bottomLeft = bottom.get(0).x > bottom.get(1).x ?
-                    bottom.get(1) :bottom.get(0);
-            org.opencv.core.Point bottomRight = bottom.get(0).x > bottom.get(1).x ?
-                    bottom.get(0) : bottom.get(1);
+            org.opencv.core.Point topLeft = top.get(0).x > top.get(1).x ? top.get(1) : top.get(0);
+            org.opencv.core.Point topRight = top.get(0).x > top.get(1).x ? top.get(0) : top.get(1);
+            org.opencv.core.Point bottomLeft = bottom.get(0).x > bottom.get(1).x ? bottom.get(1) :bottom.get(0);
+            org.opencv.core.Point bottomRight = bottom.get(0).x > bottom.get(1).x ? bottom.get(0) : bottom.get(1);
             corners.clear();
             corners.add(topLeft);
             corners.add(topRight);
             corners.add(bottomRight);
             corners.add(bottomLeft);
-            Mat correctedImage=new
-                    Mat(sampledImage.rows(),sampledImage.cols(),sampledImage.type());
+            Mat correctedImage=new Mat(sampledImage.rows(),sampledImage.cols(),sampledImage.type());
             Mat srcPoints=Converters.vector_Point2f_to_Mat(corners);
             Mat destPoints=Converters.vector_Point2f_to_Mat(Arrays.asList(new
                     org.opencv.core.Point[]{
                     new org.opencv.core.Point(0, 0),
                     new org.opencv.core.Point(correctedImage.cols(), 0),
-                    new
-                            org.opencv.core.Point(correctedImage.cols(),correctedImage.rows()),new
-                    org.opencv.core.Point(0,correctedImage.rows())}));
-            Mat transformation=Imgproc.getPerspectiveTransform(srcPoints,
-                    destPoints);
-            Imgproc.warpPerspective(sampledImage, correctedImage, transformation,
-                    correctedImage.size());
+                    new org.opencv.core.Point(correctedImage.cols(),correctedImage.rows()),new org.opencv.core.Point(0,correctedImage.rows())}));
+            Mat transformation=Imgproc.getPerspectiveTransform(srcPoints, destPoints);
+            Imgproc.warpPerspective(sampledImage, correctedImage, transformation, correctedImage.size());
             displayImage(correctedImage);
         }
         else if(id==R.id.action_manScan)

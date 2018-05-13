@@ -28,7 +28,11 @@ android {
     }
     //if your are keeping the jniLibs folder with .so file in your project then keep below file and have cpp file then only
     //sourceSets { main { jni.srcDirs = ['src/main/jni', 'src/main/jniLibs/'] } }
-    sourceSets { main { res.srcDirs = ['src/main/res', 'src/main/res/drawable-nodpi', 'src/main/res/menu'] } }
+    sourceSets {
+        main {
+            res.srcDirs = ['src/main/res', 'src/main/res/drawable-nodpi', 'src/main/res/menu'] 
+            assets.srcDirs =['src/main/assets', 'src/main/assets/']
+} }
 }
 
 dependencies {
